@@ -23,6 +23,7 @@ imageInputDOM.addEventListener("change", async (e) => {
       },
     });
     imageValue = src;
+    console.log(imageValue);
   } catch (error) {
     imageValue = null;
     console.log(error);
@@ -35,7 +36,6 @@ fileFormDOM.addEventListener("submit", async (e) => {
   const priceValue = priceInputDOM.value;
   try {
     const product = { name: nameValue, price: priceValue, image: imageValue };
-
     await axios.post(url, product);
     fetchProducts();
   } catch (error) {
@@ -52,7 +52,7 @@ async function fetchProducts() {
     const productsDOM = products
       .map((product) => {
         return `<article class="product">
-<img src="/uploads/${product.image}" alt="${product.name}" class="img"/>
+<img src="${product.image}" alt="${product.name}" class="img"/>
 <footer>
 <p>${product.name}</p>
 <span>$${product.price}</span>

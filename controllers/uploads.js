@@ -1,45 +1,24 @@
 const status = require("statuses");
-const formidable = require("formidable");
-const path = require("path");
-const { rename } = require("fs");
-const { randomBytes } = require("crypto");
-const { BadRequestError, PayloadError } = require("../errors");
+const cloudinary = require("cloudinary").v2;
+const fs = require("fs");
+const { BadRequestError } = require("../errors");
 
-const fileName = () => randomBytes(8).toString("hex");
+const uploadProductImage = async (req, res) => {
+  const tempFilePath = req.files.image.tempFilePath;
+  // Basic cloudinary setup
+  const result = await cloudinary.uploader.upload(tempFilePath, {
+    use_filename: true,
+    folder: "Image-Upload-Cloudinary",
+  });
 
-const uploadProductImage = (req, res) => {
-  const form = new formidable.IncomingForm();
-  const maxFileSize = 1 * 1024 * 1024; // 1mb
-  const minFileSize = 1 * 1024; // 1kb
-  let filename;
-
-  form.uploadDir = path.join(__dirname, "../public/uploads");
-
-  form.on("progress", (bytesReceived, bytesExpected) => {
-    if (bytesExpected < minFileSize)
+  fs.unlink(tempFilePath, (err) => {
+    if (err)
       throw new BadRequestError(
-        `File is too small, expectBytes: ${minFileSize} or more`
+        `Unable to delete temporary file from disk filePath:${tempFilePath}`
       );
-    if (bytesExpected > maxFileSize)
-      throw new PayloadError(`File is too large, expectBytes: ${maxFileSize}`);
   });
 
-  form.on("file", (field, file) => {
-    filename = fileName() + path.extname(file.name);
-    rename(file.path, path.join(form.uploadDir, filename), (err) => {
-      if (err) throw err;
-    });
-  });
-
-  form.on("error", (err) => {
-    throw new Error("An error occured while uploading the file.");
-  });
-
-  form.on("end", () =>
-    res.status(status("OK")).json({ image: { src: filename } })
-  );
-
-  form.parse(req);
+  res.status(status("OK")).json({ image: { src: result.secure_url } });
 };
 
 module.exports = { uploadProductImage };
